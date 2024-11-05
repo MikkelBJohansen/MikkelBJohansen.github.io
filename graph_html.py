@@ -5,6 +5,7 @@ import subprocess
 import logging
 import os
 import sys
+from datetime import datetime
 
 # Set up logging
 log_file = '/home/pi/danish_data_project/error_log.txt'
@@ -156,6 +157,10 @@ try:
         table_html += f"<h3>Chart for POS category '{pos}':</h3>"
         table_html += chart_html
 
+    # Get current date and time in EU format
+    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    update_html = f"<h4>Latest update: {current_time}</h4>"
+
     # Define the path to index.html
     index_html_path = '/home/pi/danish_data_project/index.html'
 
@@ -164,7 +169,7 @@ try:
         html_content = f.read()
 
     # Replace the placeholders with the generated content
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', table_html)
+    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', update_html + table_html)
 
     # Write the updated HTML content back to the file
     with open(index_html_path, 'w', encoding='utf-8') as f:
