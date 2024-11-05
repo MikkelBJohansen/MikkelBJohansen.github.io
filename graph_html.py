@@ -97,8 +97,6 @@ try:
 
     # Generate HTML for the combined chart
     combined_chart_html = fig_combined.to_html(full_html=False, include_plotlyjs='cdn')
-    table_html += f"<h3>Chart for POS categories 'VERB' and 'AUX':</h3>"
-    table_html += combined_chart_html
 
     # Plotting Separate Charts for NOUN, ADP, ADV
     for pos in other_pos_filter:
@@ -154,8 +152,7 @@ try:
         chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
 
         # Append the chart HTML to the main HTML content
-        table_html += f"<h3>Chart for POS category '{pos}':</h3>"
-        table_html += chart_html
+        combined_chart_html += f"<h3>Chart for POS category '{pos}':</h3>" + chart_html
 
     # Get current date and time in EU format
     current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
@@ -169,7 +166,9 @@ try:
         html_content = f.read()
 
     # Replace the placeholders with the generated content
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', update_html + table_html)
+    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', combined_chart_html)
+    html_content = html_content.replace('<!--DYNAMIC_SECTION_TABLE-->', table_html)
+    html_content = html_content.replace('<!--DYNAMIC_SECTION_UPDATE-->', update_html)
 
     # Write the updated HTML content back to the file
     with open(index_html_path, 'w', encoding='utf-8') as f:
