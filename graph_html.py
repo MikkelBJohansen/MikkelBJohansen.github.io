@@ -170,6 +170,11 @@ try:
     with open(index_html_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
+    # Log success message and print to terminal
+    success_message = "Successfully updated index.html with new charts and tables."
+    logging.info(success_message)
+    print(success_message)
+
     # Call the auto_commit.sh script
     subprocess.run(['/home/pi/danish_data_project/auto_commit.sh'])
 
