@@ -40,7 +40,7 @@ try:
     table_html = ''
     for category, result_df in top_50_results.items():
         table_html += f"<h3>Top 50 occurrences for POS category '{category}':</h3>"
-        table_html += result_df.to_html(index=False, classes='data-table')
+        table_html += result_df.to_html(index=False, classes='data-table', border=0)
 
     # Plotting Separate Charts for Each POS with Plotly for Interactivity
     combined_pos_filter = ['VERB', 'AUX']
@@ -75,14 +75,19 @@ try:
         xaxis_title='Lemma',
         yaxis_title='Total Count of Lemma Occurrences',
         barmode='stack',
-        plot_bgcolor='#f0f0f0',
-        paper_bgcolor='#f8f8f8',
-        font=dict(size=14),
+        plot_bgcolor='#2b2b2b',
+        paper_bgcolor='#1e1e1e',
+        font=dict(size=14, color='white'),
         xaxis_tickangle=-45,
         legend_title_text='Lemmas',
         height=700,
         margin=dict(t=80, b=150, l=50, r=50),
+        title_x=0.5,  # Center the title
     )
+
+    # Update hover text to be outside bars to avoid squishing
+    for trace in fig_combined.data:
+        trace.textposition = 'outside'
 
     # Adding watermark to the plot using annotation
     fig_combined.add_annotation(
@@ -128,14 +133,19 @@ try:
             xaxis_title='Lemma',
             yaxis_title='Total Count of Lemma Occurrences',
             barmode='stack',
-            plot_bgcolor='#f0f0f0',
-            paper_bgcolor='#f8f8f8',
-            font=dict(size=14),
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(size=14, color='white'),
             xaxis_tickangle=-45,
             legend_title_text='Lemmas',
             height=700,
             margin=dict(t=80, b=150, l=50, r=50),
+            title_x=0.5,
         )
+
+        # Update hover text to be outside bars to avoid squishing
+        for trace in fig.data:
+            trace.textposition = 'outside'
 
         # Adding watermark to the plot using annotation
         fig.add_annotation(
@@ -158,19 +168,75 @@ try:
     current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     update_html = f"<h4>Latest update: {current_time}</h4>"
 
+    # Generate the complete HTML page
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Danish Data Project - POS Charts</title>
+        <link rel="stylesheet" href="styles.css">
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body {{
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                text-align: center;
+            }}
+            .content-section {{
+                margin: 20px auto;
+                max-width: 900px;
+            }}
+            h3 {{
+                color: #d4d4d4;
+            }}
+            .data-table {{
+                margin: 20px auto;
+                border-collapse: collapse;
+                width: 100%;
+                max-width: 800px;
+            }}
+            .data-table th, .data-table td {{
+                border: 1px solid #d4d4d4;
+                padding: 8px;
+                text-align: left;
+            }}
+            .data-table th {{
+                background-color: #2b2b2b;
+            }}
+            footer {{
+                margin-top: 40px;
+                color: #d4d4d4;
+            }}
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Danish Data Project - Frequency Analysis of POS</h1>
+            {update_html}
+            <p>Hey there! I'm Mikkel and this is my website which scrapes and tracks word usage in articles from DR.dk - updated twice a day. I hope you find something useful.</p>
+        </header>
+        <div class="content-section">
+            {combined_chart_html}
+        </div>
+        <div class="content-section">
+            {table_html}
+        </div>
+        <footer>
+            © 2024 Mikkel Barner Johansen. All Rights Reserved.
+        </footer>
+    </body>
+    </html>
+    """
+
     # Define the path to index.html
     index_html_path = '/home/pi/danish_data_project/index.html'
 
-    # Read the existing HTML file
-    with open(index_html_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
-
-    # Replace the placeholders with the generated content
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', combined_chart_html)
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_TABLE-->', table_html)
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_UPDATE-->', update_html)
-
-    # Write the updated HTML content back to the file
+    # Write the updated HTML content to the file
     with open(index_html_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
