@@ -24,12 +24,16 @@ try:
     pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
     df_filtered = df[df['pos'].isin(pos_category_filter)]
 
-    lemma_counts = df_filtered.groupby(['lemma', 'pos']).size().reset_index(name='count')
+    lemma_counts = df_filtered.groupby(['lemma', 'pos', 'token_text']).size().reset_index(name='count')
 
+    # Generate top 50 occurrences data tables grouped by lemma and token_text
     top_50_results = {}
     for category in pos_category_filter:
         category_df = lemma_counts[lemma_counts['pos'] == category]
-        top_50_results[category] = category_df.sort_values(by='count', ascending=False).head(50)
+        top_50_grouped = category_df.groupby(['lemma', 'token_text']).agg({'count': 'sum'}).reset_index()
+        top_50_sorted = top_50_grouped.groupby('lemma').agg({'count': 'sum'}).reset_index()
+        top_50_sorted = top_50_sorted.sort_values(by='count', ascending=False).head(50)
+        top_50_results[category] = top_50_grouped[top_50_grouped['lemma'].isin(top_50_sorted['lemma'])]
 
     # Generate HTML for Data Tables
     table_html = ''
@@ -37,31 +41,36 @@ try:
         table_html += f"<h3>Top 50 occurrences for POS category '{category}':</h3>"
         table_html += result_df.to_html(index=False, classes='data-table')
 
-    # Plotting the Combined Charts with Plotly for Interactivity
-    # Prepare data for plotting
-    df_plot = lemma_counts.groupby(['lemma', 'pos'])['count'].sum().unstack(fill_value=0)
-    top_lemmas = df_plot.sum(axis=1).sort_values(ascending=False).head(50).index
-    df_plot = df_plot.loc[top_lemmas]
+    # Plotting Separate Charts for Each POS with Plotly for Interactivity
+    combined_pos_filter = ['VERB', 'AUX']
+    other_pos_filter = ['NOUN', 'ADP', 'ADV']
 
-    # Create the figure for the bar plot
-    fig_all_time = go.Figure()
+    # Plotting Combined Chart for VERB and AUX
+    combined_df = lemma_counts[lemma_counts['pos'].isin(combined_pos_filter)]
+    combined_grouped = combined_df.groupby(['lemma', 'token_text']).agg({'count': 'sum'}).reset_index()
+    top_lemmas_combined = combined_grouped.groupby('lemma')['count'].sum().sort_values(ascending=False).head(15).index
+    combined_grouped = combined_grouped[combined_grouped['lemma'].isin(top_lemmas_combined)]
 
-    # Add bars for each POS category
-    for pos in pos_category_filter:
-        if pos in df_plot.columns:
-            fig_all_time.add_trace(
-                go.Bar(
-                    x=df_plot.index,
-                    y=df_plot[pos],
-                    name=pos,
-                    hoverinfo='x+y+name',
-                    marker=dict(line=dict(width=1, color='black'))
-                )
+    # Create figure for combined VERB and AUX chart
+    fig_combined = go.Figure()
+
+    # Add bars for each lemma with subdivisions by token_text
+    for lemma in top_lemmas_combined:
+        lemma_df = combined_grouped[combined_grouped['lemma'] == lemma]
+        fig_combined.add_trace(
+            go.Bar(
+                x=[lemma] * len(lemma_df),
+                y=lemma_df['count'],
+                name=lemma,
+                text=lemma_df['token_text'],
+                hoverinfo='x+y+text',
+                marker=dict(line=dict(width=1, color='black'))
             )
+        )
 
-    # Set the layout properties
-    fig_all_time.update_layout(
-        title='Combined Frequency Trends of Top Lemmas - All Time',
+    # Set the layout properties for the combined chart
+    fig_combined.update_layout(
+        title='Frequency Trends of Top Lemmas for POS Categories: VERB and AUX',
         xaxis_title='Lemma',
         yaxis_title='Total Count of Lemma Occurrences',
         barmode='stack',
@@ -69,13 +78,13 @@ try:
         paper_bgcolor='#f8f8f8',
         font=dict(size=14),
         xaxis_tickangle=-45,
-        legend_title_text='POS Category',
+        legend_title_text='Lemmas',
         height=700,
         margin=dict(t=80, b=150, l=50, r=50),
     )
 
     # Adding watermark to the plot using annotation
-    fig_all_time.add_annotation(
+    fig_combined.add_annotation(
         text="Mikkel Barner Johansen",
         xref="paper", yref="paper",
         x=0.5, y=0.5,
@@ -85,8 +94,67 @@ try:
         align="center"
     )
 
-    # Generate HTML for the chart
-    chart_html = fig_all_time.to_html(full_html=False, include_plotlyjs='cdn')
+    # Generate HTML for the combined chart
+    combined_chart_html = fig_combined.to_html(full_html=False, include_plotlyjs='cdn')
+    table_html += f"<h3>Chart for POS categories 'VERB' and 'AUX':</h3>"
+    table_html += combined_chart_html
+
+    # Plotting Separate Charts for NOUN, ADP, ADV
+    for pos in other_pos_filter:
+        pos_df = lemma_counts[lemma_counts['pos'] == pos]
+        pos_grouped = pos_df.groupby(['lemma', 'token_text']).agg({'count': 'sum'}).reset_index()
+        top_lemmas = pos_grouped.groupby('lemma')['count'].sum().sort_values(ascending=False).head(15).index
+        pos_grouped = pos_grouped[pos_grouped['lemma'].isin(top_lemmas)]
+
+        # Create figure for each POS category
+        fig = go.Figure()
+
+        # Add bars for each lemma with subdivisions by token_text
+        for lemma in top_lemmas:
+            lemma_df = pos_grouped[pos_grouped['lemma'] == lemma]
+            fig.add_trace(
+                go.Bar(
+                    x=[lemma] * len(lemma_df),
+                    y=lemma_df['count'],
+                    name=lemma,
+                    text=lemma_df['token_text'],
+                    hoverinfo='x+y+text',
+                    marker=dict(line=dict(width=1, color='black'))
+                )
+            )
+
+        # Set the layout properties for each chart
+        fig.update_layout(
+            title=f'Frequency Trends of Top Lemmas for POS Category: {pos}',
+            xaxis_title='Lemma',
+            yaxis_title='Total Count of Lemma Occurrences',
+            barmode='stack',
+            plot_bgcolor='#f0f0f0',
+            paper_bgcolor='#f8f8f8',
+            font=dict(size=14),
+            xaxis_tickangle=-45,
+            legend_title_text='Lemmas',
+            height=700,
+            margin=dict(t=80, b=150, l=50, r=50),
+        )
+
+        # Adding watermark to the plot using annotation
+        fig.add_annotation(
+            text="Mikkel Barner Johansen",
+            xref="paper", yref="paper",
+            x=0.5, y=0.5,
+            showarrow=False,
+            font=dict(size=40, color="lightgray"),
+            opacity=0.2,
+            align="center"
+        )
+
+        # Generate HTML for the chart
+        chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+        # Append the chart HTML to the main HTML content
+        table_html += f"<h3>Chart for POS category '{pos}':</h3>"
+        table_html += chart_html
 
     # Define the path to index.html
     index_html_path = '/home/pi/danish_data_project/index.html'
@@ -96,8 +164,7 @@ try:
         html_content = f.read()
 
     # Replace the placeholders with the generated content
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', chart_html)
-    html_content = html_content.replace('<!--DYNAMIC_SECTION_TABLE-->', table_html)
+    html_content = html_content.replace('<!--DYNAMIC_SECTION_CHART-->', table_html)
 
     # Write the updated HTML content back to the file
     with open(index_html_path, 'w', encoding='utf-8') as f:
