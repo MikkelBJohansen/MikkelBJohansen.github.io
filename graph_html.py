@@ -21,6 +21,7 @@ try:
     SELECT tokens.*, articles.publication_date
     FROM tokens
     JOIN articles ON tokens.sentence_id = articles.article_id
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
     """
 
     # Load data into DataFrame
@@ -28,21 +29,30 @@ try:
 
     # Filter data
     pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
-    df_filtered = df[df['pos'].isin(pos_category_filter)]
+    # POS filtering already done in SQL, so no need to filter again
+df_filtered = df
 
     # Use 'publication_date' from articles table for date filtering
     if 'publication_date' in df_filtered.columns:
-        df_filtered.loc[:, 'publication_date'] = pd.to_datetime(df_filtered['publication_date'])
+        df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
         # Separate data for the current week
         one_week_ago = datetime.now() - timedelta(days=7)
-        df_week = df_filtered[df_filtered['publication_date'] >= one_week_ago]
+        query_week = """
+    SELECT tokens.*, articles.publication_date
+    FROM tokens
+    JOIN articles ON tokens.sentence_id = articles.article_id
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
+    AND articles.publication_date >= DATE('now', '-7 days')
+    """
+df_week = pd.read_sql_query(query_week, conn)
+df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
     else:
         # If 'publication_date' column is missing, create an empty DataFrame for df_week
         df_week = pd.DataFrame(columns=df_filtered.columns)
 
     # Group the data by lemma and pos (ignoring token_text for simpler counts)
-    lemma_counts = df_filtered.groupby(['lemma', 'pos']).size().reset_index(name='count')
-    lemma_counts_week = df_week.groupby(['lemma', 'pos']).size().reset_index(name='count')
+    lemma_counts = df_filtered.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
+    lemma_counts_week = df_week.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
 
     # Generate top 15 occurrences data tables grouped by lemma
     top_15_results = {}
@@ -61,12 +71,12 @@ try:
     combined_pos_filter = ['VERB', 'AUX']
     other_pos_filter = ['NOUN', 'ADP', 'ADV']
 
-    def create_chart(df, pos_filter, title_suffix, color_scheme):
-        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).agg({'count': 'sum'}).reset_index()
+    def create_chart(df, pos_filter, title_suffix, color_scheme, hover_suffix):
+        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).size().reset_index(name='count')
         top_lemmas = grouped_df.sort_values(by='count', ascending=False).head(10)['lemma']
         grouped_df = grouped_df[grouped_df['lemma'].isin(top_lemmas)]
 
-        fig = go.Figure()  # Create a new figure with specified color scheme
+        fig = go.Figure()  # Initialize the figure for plotting the data
 
         for lemma in top_lemmas:
             lemma_df = grouped_df[grouped_df['lemma'] == lemma]
@@ -75,7 +85,7 @@ try:
                     x=[lemma],
                     y=lemma_df['count'],
                     name=lemma,
-                    text=f'Total Count: {lemma_df["count"].values[0]}',
+                    text=f'Word: {lemma}<br>POS: {pos_filter}<br>Frequency: {lemma_df["count"].values[0]}<br>Data: {hover_suffix}',
                     hoverinfo='x+y+text',
                     marker=dict(line=dict(width=1, color='black'))
                 )
@@ -84,7 +94,7 @@ try:
         fig.update_layout(
             title=f'Top 10 Most Frequent Words: {title_suffix}',
             xaxis_title='Word',
-            yaxis_title='Total Count of Word Occurrences',
+            yaxis_title='Total Number of Word Occurrences',
             barmode='stack',
             plot_bgcolor='#2b2b2b',
             paper_bgcolor='#1e1e1e',
@@ -115,8 +125,8 @@ try:
     combined_chart_html = ""
 
     # Combined VERB and AUX charts
-    fig_combined_week = create_chart(lemma_counts_week, combined_pos_filter, 'Verbs and Auxiliaries (This Week)', color_scheme='rgba(255, 99, 71, 0.8)')
-    fig_combined_all_time = create_chart(lemma_counts, combined_pos_filter, 'Verbs and Auxiliaries (All Time)', color_scheme='rgba(135, 206, 235, 0.8)')
+    fig_combined_week = create_chart(lemma_counts_week, combined_pos_filter, 'Verbs and Auxiliaries (This Week)', color_scheme='#f07178', hover_suffix='This Week')
+    fig_combined_all_time = create_chart(lemma_counts, combined_pos_filter, 'Verbs and Auxiliaries (All Time)', color_scheme='#82aaff', hover_suffix='All Time')
     combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
     combined_chart_html += f"<div>{fig_combined_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
@@ -124,8 +134,8 @@ try:
 
     # Charts for NOUN, ADP, ADV
     for pos in other_pos_filter:
-        fig_week = create_chart(lemma_counts_week, [pos], f'{pos.capitalize()} (This Week)', color_scheme='rgba(255, 165, 0, 0.8)')
-        fig_all_time = create_chart(lemma_counts, [pos], f'{pos.capitalize()} (All Time)', color_scheme='rgba(173, 216, 230, 0.8)')
+        fig_week = create_chart(lemma_counts_week, [pos], f'{pos.capitalize()} (This Week)', color_scheme='#ffcb6b', hover_suffix='This Week')
+        fig_all_time = create_chart(lemma_counts, [pos], f'{pos.capitalize()} (All Time)', color_scheme='#c3e88d', hover_suffix='All Time')
         combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
         combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
         combined_chart_html += f"<div>{fig_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
