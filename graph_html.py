@@ -32,7 +32,7 @@ try:
 
     # Use 'publication_date' from articles table for date filtering
     if 'publication_date' in df_filtered.columns:
-        df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
+        df_filtered.loc[:, 'publication_date'] = pd.to_datetime(df_filtered['publication_date'])
         # Separate data for the current week
         one_week_ago = datetime.now() - timedelta(days=7)
         df_week = df_filtered[df_filtered['publication_date'] >= one_week_ago]
@@ -40,59 +40,57 @@ try:
         # If 'publication_date' column is missing, create an empty DataFrame for df_week
         df_week = pd.DataFrame(columns=df_filtered.columns)
 
-    # Group the data by lemma, pos, and token_text
-    lemma_counts = df_filtered.groupby(['lemma', 'pos', 'token_text']).size().reset_index(name='count')
-    lemma_counts_week = df_week.groupby(['lemma', 'pos', 'token_text']).size().reset_index(name='count')
+    # Group the data by lemma and pos (ignoring token_text for simpler counts)
+    lemma_counts = df_filtered.groupby(['lemma', 'pos']).size().reset_index(name='count')
+    lemma_counts_week = df_week.groupby(['lemma', 'pos']).size().reset_index(name='count')
 
-    # Generate top 50 occurrences data tables grouped by lemma and token_text
-    top_50_results = {}
+    # Generate top 15 occurrences data tables grouped by lemma
+    top_15_results = {}
     for category in pos_category_filter:
         category_df = lemma_counts[lemma_counts['pos'] == category]
-        top_50_grouped = category_df.groupby(['lemma', 'token_text']).agg({'count': 'sum'}).reset_index()
-        top_50_sorted = top_50_grouped.groupby('lemma').agg({'count': 'sum'}).reset_index()
-        top_50_sorted = top_50_sorted.sort_values(by='count', ascending=False).head(50)
-        top_50_results[category] = top_50_grouped[top_50_grouped['lemma'].isin(top_50_sorted['lemma'])]
+        top_15_sorted = category_df.sort_values(by='count', ascending=False).head(15)
+        top_15_results[category] = top_15_sorted
 
     # Generate HTML for Data Tables
     table_html = ''
-    for category, result_df in top_50_results.items():
-        table_html += f"<h3>Top 50 occurrences for POS category '{category}':</h3>"
+    for category, result_df in top_15_results.items():
+        table_html += f"<h3>Top 15 occurrences for POS category '{category}':</h3>"
         table_html += result_df.to_html(index=False, classes='data-table', border=0)
 
     # Plotting Separate Charts for Each POS with Plotly for Interactivity
     combined_pos_filter = ['VERB', 'AUX']
     other_pos_filter = ['NOUN', 'ADP', 'ADV']
 
-    def create_chart(df, pos_filter, title_suffix):
-        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma', 'token_text']).agg({'count': 'sum'}).reset_index()
-        top_lemmas = grouped_df.groupby('lemma')['count'].sum().sort_values(ascending=False).head(15).index
+    def create_chart(df, pos_filter, title_suffix, color_scheme):
+        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).agg({'count': 'sum'}).reset_index()
+        top_lemmas = grouped_df.sort_values(by='count', ascending=False).head(10)['lemma']
         grouped_df = grouped_df[grouped_df['lemma'].isin(top_lemmas)]
 
-        fig = go.Figure()
+        fig = go.Figure()  # Create a new figure with specified color scheme
 
         for lemma in top_lemmas:
             lemma_df = grouped_df[grouped_df['lemma'] == lemma]
             fig.add_trace(
-                go.Bar(
-                    x=[lemma] * len(lemma_df),
+                go.Bar(marker_color=color_scheme,
+                    x=[lemma],
                     y=lemma_df['count'],
                     name=lemma,
-                    text=lemma_df['token_text'],
+                    text=f'Total Count: {lemma_df["count"].values[0]}',
                     hoverinfo='x+y+text',
                     marker=dict(line=dict(width=1, color='black'))
                 )
             )
 
         fig.update_layout(
-            title=f'Frequency Trends of Top Lemmas for POS Categories: {title_suffix}',
-            xaxis_title='Lemma',
-            yaxis_title='Total Count of Lemma Occurrences',
+            title=f'Top 10 Most Frequent Words: {title_suffix}',
+            xaxis_title='Word',
+            yaxis_title='Total Count of Word Occurrences',
             barmode='stack',
             plot_bgcolor='#2b2b2b',
             paper_bgcolor='#1e1e1e',
             font=dict(size=14, color='white'),
             xaxis_tickangle=-45,
-            legend_title_text='Lemmas',
+            legend_title_text='Words',
             height=700,
             margin=dict(t=80, b=150, l=50, r=50),
             title_x=0.5,
@@ -113,25 +111,25 @@ try:
 
         return fig
 
-    # Create and combine charts for all time and weekly data
+    # Create and combine charts for weekly and all time data
     combined_chart_html = ""
 
     # Combined VERB and AUX charts
-    fig_combined_all_time = create_chart(lemma_counts, combined_pos_filter, 'VERB and AUX (All Time)')
-    fig_combined_week = create_chart(lemma_counts_week, combined_pos_filter, 'VERB and AUX (This Week)')
-    combined_chart_html += "<div style='display: flex; justify-content: space-around;'>"
-    combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+    fig_combined_week = create_chart(lemma_counts_week, combined_pos_filter, 'Verbs and Auxiliaries (This Week)', color_scheme='rgba(255, 99, 71, 0.8)')
+    fig_combined_all_time = create_chart(lemma_counts, combined_pos_filter, 'Verbs and Auxiliaries (All Time)', color_scheme='rgba(135, 206, 235, 0.8)')
+    combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
     combined_chart_html += f"<div>{fig_combined_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+    combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += "</div>"
 
     # Charts for NOUN, ADP, ADV
     for pos in other_pos_filter:
-        fig_all_time = create_chart(lemma_counts, [pos], f'{pos} (All Time)')
-        fig_week = create_chart(lemma_counts_week, [pos], f'{pos} (This Week)')
-        combined_chart_html += f"<h3>Charts for POS category '{pos}':</h3>"
-        combined_chart_html += "<div style='display: flex; justify-content: space-around;'>"
-        combined_chart_html += f"<div>{fig_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+        fig_week = create_chart(lemma_counts_week, [pos], f'{pos.capitalize()} (This Week)', color_scheme='rgba(255, 165, 0, 0.8)')
+        fig_all_time = create_chart(lemma_counts, [pos], f'{pos.capitalize()} (All Time)', color_scheme='rgba(173, 216, 230, 0.8)')
+        combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
+        combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
         combined_chart_html += f"<div>{fig_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+        combined_chart_html += f"<div>{fig_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
         combined_chart_html += "</div>"
 
     # Get current date and time in EU format
@@ -145,7 +143,7 @@ try:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Danish Data Project - POS Charts</title>
+        <title>Danish Data Project - Word Frequency Charts</title>
         <link rel="stylesheet" href="styles.css">
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <style>
@@ -159,7 +157,7 @@ try:
             }}
             .content-section {{
                 margin: 20px auto;
-                max-width: 900px;
+                max-width: 1200px;
             }}
             h3 {{
                 color: #d4d4d4;
@@ -186,7 +184,7 @@ try:
     </head>
     <body>
         <header>
-            <h1>Danish Data Project - Frequency Analysis of POS</h1>
+            <h1>Danish Data Project - Word Frequency Charts</h1>
             {update_html}
             <p>Hey there! I'm Mikkel and this is my website which scrapes and tracks word usage in articles from DR.dk - updated twice a day. I hope you find something useful.</p>
         </header>
