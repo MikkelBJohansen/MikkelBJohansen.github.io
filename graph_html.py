@@ -30,22 +30,22 @@ try:
     # Filter data
     pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
     # POS filtering already done in SQL, so no need to filter again
-df_filtered = df
+    df_filtered = df
 
     # Use 'publication_date' from articles table for date filtering
     if 'publication_date' in df_filtered.columns:
         df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
         # Separate data for the current week
         one_week_ago = datetime.now() - timedelta(days=7)
-        query_week = """
+            query_week = """
     SELECT tokens.*, articles.publication_date
     FROM tokens
     JOIN articles ON tokens.sentence_id = articles.article_id
     WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
     AND articles.publication_date >= DATE('now', '-7 days')
     """
-df_week = pd.read_sql_query(query_week, conn)
-df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
+    df_week = pd.read_sql_query(query_week, conn)
+    df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
     else:
         # If 'publication_date' column is missing, create an empty DataFrame for df_week
         df_week = pd.DataFrame(columns=df_filtered.columns)
@@ -228,3 +228,4 @@ df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
 
 except Exception as e:
     logging.exception("An error occurred during execution.")
+
