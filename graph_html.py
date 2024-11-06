@@ -16,7 +16,12 @@ try:
     # Updated SQLite connection string to use the /home/pi/database directory
     conn = sq.connect('/home/pi/danish_data.sqlite3')
 
-    query = "SELECT * FROM tokens"
+    # Query to join tokens with articles to get publication_date
+    query = """
+    SELECT tokens.*, articles.publication_date
+    FROM tokens
+    JOIN articles ON tokens.sentence_id = articles.article_id
+    """
 
     # Load data into DataFrame
     df = pd.read_sql_query(query, conn)
@@ -25,15 +30,15 @@ try:
     pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
     df_filtered = df[df['pos'].isin(pos_category_filter)]
 
-    # Ensure 'datetime' column exists before converting
-    if 'datetime' in df_filtered.columns:
-        df_filtered['datetime'] = pd.to_datetime(df_filtered['datetime'])
+    # Use 'publication_date' from articles table for date filtering
+    if 'publication_date' in df_filtered.columns:
+        df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
+        # Separate data for the current week
+        one_week_ago = datetime.now() - timedelta(days=7)
+        df_week = df_filtered[df_filtered['publication_date'] >= one_week_ago]
     else:
-        raise KeyError("The 'datetime' column is missing from the dataset.")
-
-    # Separate data for the current week
-    one_week_ago = datetime.now() - timedelta(days=7)
-    df_week = df_filtered[df_filtered['datetime'] >= one_week_ago]
+        # If 'publication_date' column is missing, create an empty DataFrame for df_week
+        df_week = pd.DataFrame(columns=df_filtered.columns)
 
     # Group the data by lemma, pos, and token_text
     lemma_counts = df_filtered.groupby(['lemma', 'pos', 'token_text']).size().reset_index(name='count')
