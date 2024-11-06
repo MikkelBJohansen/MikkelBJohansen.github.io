@@ -37,15 +37,15 @@ try:
         df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
         # Separate data for the current week
         one_week_ago = datetime.now() - timedelta(days=7)
-            query_week = """
-    SELECT tokens.*, articles.publication_date
-    FROM tokens
-    JOIN articles ON tokens.sentence_id = articles.article_id
-    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
-    AND articles.publication_date >= DATE('now', '-7 days')
-    """
-    df_week = pd.read_sql_query(query_week, conn)
-    df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
+        query_week = """
+        SELECT tokens.*, articles.publication_date
+        FROM tokens
+        JOIN articles ON tokens.sentence_id = articles.article_id
+        WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
+        AND articles.publication_date >= DATE('now', '-7 days')
+        """
+        df_week = pd.read_sql_query(query_week, conn)
+        df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
     else:
         # If 'publication_date' column is missing, create an empty DataFrame for df_week
         df_week = pd.DataFrame(columns=df_filtered.columns)
@@ -81,7 +81,8 @@ try:
         for lemma in top_lemmas:
             lemma_df = grouped_df[grouped_df['lemma'] == lemma]
             fig.add_trace(
-                go.Bar(marker_color=color_scheme,
+                go.Bar(
+                    marker_color=color_scheme,
                     x=[lemma],
                     y=lemma_df['count'],
                     name=lemma,
@@ -121,12 +122,24 @@ try:
 
         return fig
 
-    # Create and combine charts for weekly and all time data
+    # Create and combine charts for weekly and all-time data
     combined_chart_html = ""
 
     # Combined VERB and AUX charts
-    fig_combined_week = create_chart(lemma_counts_week, combined_pos_filter, 'Verbs and Auxiliaries (This Week)', color_scheme='#f07178', hover_suffix='This Week')
-    fig_combined_all_time = create_chart(lemma_counts, combined_pos_filter, 'Verbs and Auxiliaries (All Time)', color_scheme='#82aaff', hover_suffix='All Time')
+    fig_combined_week = create_chart(
+        lemma_counts_week,
+        combined_pos_filter,
+        'Verbs and Auxiliaries (This Week)',
+        color_scheme='#f07178',
+        hover_suffix='This Week'
+    )
+    fig_combined_all_time = create_chart(
+        lemma_counts,
+        combined_pos_filter,
+        'Verbs and Auxiliaries (All Time)',
+        color_scheme='#82aaff',
+        hover_suffix='All Time'
+    )
     combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
     combined_chart_html += f"<div>{fig_combined_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
@@ -134,8 +147,20 @@ try:
 
     # Charts for NOUN, ADP, ADV
     for pos in other_pos_filter:
-        fig_week = create_chart(lemma_counts_week, [pos], f'{pos.capitalize()} (This Week)', color_scheme='#ffcb6b', hover_suffix='This Week')
-        fig_all_time = create_chart(lemma_counts, [pos], f'{pos.capitalize()} (All Time)', color_scheme='#c3e88d', hover_suffix='All Time')
+        fig_week = create_chart(
+            lemma_counts_week,
+            [pos],
+            f'{pos.capitalize()} (This Week)',
+            color_scheme='#ffcb6b',
+            hover_suffix='This Week'
+        )
+        fig_all_time = create_chart(
+            lemma_counts,
+            [pos],
+            f'{pos.capitalize()} (All Time)',
+            color_scheme='#c3e88d',
+            hover_suffix='All Time'
+        )
         combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
         combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
         combined_chart_html += f"<div>{fig_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
@@ -228,4 +253,3 @@ try:
 
 except Exception as e:
     logging.exception("An error occurred during execution.")
-
