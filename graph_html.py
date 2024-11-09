@@ -22,7 +22,7 @@ try:
     FROM tokens
     JOIN sentences ON tokens.sentence_id = sentences.sentence_id
     JOIN articles ON sentences.article_id = articles.article_id
-    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV');
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADJ', 'ADP', 'ADV');
     """
 
     # Load all-time data into DataFrame
@@ -35,7 +35,7 @@ try:
     FROM tokens
     JOIN sentences ON tokens.sentence_id = sentences.sentence_id
     JOIN articles ON sentences.article_id = articles.article_id
-    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADJ', 'ADP', 'ADV')
       AND date(substr(articles.publication_date, 1, 4) || '-' || substr(articles.publication_date, 6, 2) || '-' || substr(articles.publication_date, 9, 2)) >= date('now', '-1 day');
     """
 
@@ -53,7 +53,7 @@ try:
     lemma_counts_24_hours = df_24_hours.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
 
     # Generate top 15 occurrences data tables grouped by lemma for all-time data and 24-hour data
-    pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
+    pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADJ', 'ADP', 'ADV']
     top_15_results_all_time = {}
     top_15_results_24_hours = {}
 
@@ -89,9 +89,17 @@ try:
         table_html += f"<div><h4>Last 24 Hours Data</h4>{top_15_results_24_hours[category].to_html(index=False, classes='data-table', border=0)}</div>"
         table_html += "</div>"
 
+    # Define distinct colors for charts
+    distinct_colors = [
+        '#82aaff', '#f07178', '#c3e88d', '#ffcb6b', '#ff5370', '#b2ccd6', '#89ddff', '#f78c6c', '#c792ea', '#ff5370'
+    ]
+
     # Create figures for each POS category using the correct data from tables
     def create_chart_from_data(data, title_suffix, color_scheme, hover_suffix):
         fig = go.Figure()
+
+        # Sort data to ensure legend matches chart order
+        data = data.sort_values(by='count', ascending=False)
 
         # Plot the data
         for _, row in data.iterrows():
@@ -146,13 +154,13 @@ try:
     fig_combined_all_time = create_chart_from_data(
         top_15_results_all_time['VERB_AUX'],
         'Verbs and Auxiliaries',
-        color_scheme='#82aaff',
+        color_scheme=distinct_colors[0],  # First color for all-time VERB + AUX
         hover_suffix='All Time'
     )
     fig_combined_24_hours = create_chart_from_data(
         top_15_results_24_hours['VERB_AUX'],
         'Verbs and Auxiliaries',
-        color_scheme='#f07178',
+        color_scheme=distinct_colors[1],  # Second color for 24-hour VERB + AUX
         hover_suffix='Last 24 Hours'
     )
     combined_chart_html += "<h3>Charts for Verbs and Auxiliaries:</h3>"
@@ -161,18 +169,18 @@ try:
     combined_chart_html += f"<div>{fig_combined_24_hours.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += "</div>"
 
-    # Create charts for NOUN, ADP, ADV categories for all-time and 24-hour data
-    for pos in ['NOUN', 'ADP', 'ADV']:
+    # Create charts for NOUN, ADJ, ADP, ADV categories for all-time and 24-hour data
+    for i, pos in enumerate(['NOUN', 'ADJ', 'ADP', 'ADV']):
         fig_all_time = create_chart_from_data(
             top_15_results_all_time[pos],
             f'{pos.capitalize()}',
-            color_scheme='#c3e88d',
+            color_scheme=distinct_colors[2 + i * 2],  # Distinct color for each POS
             hover_suffix='All Time'
         )
         fig_24_hours = create_chart_from_data(
             top_15_results_24_hours[pos],
             f'{pos.capitalize()}',
-            color_scheme='#ffcb6b',
+            color_scheme=distinct_colors[3 + i * 2],  # Distinct color for each POS
             hover_suffix='Last 24 Hours'
         )
         combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
