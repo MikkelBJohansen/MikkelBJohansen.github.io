@@ -16,56 +16,63 @@ try:
     # Updated SQLite connection string to use the /home/pi/database directory
     conn = sq.connect('/home/pi/danish_data.sqlite3')
 
-    # Query to join tokens with articles to get publication_date
-    query = """
+    # Query to get all-time data
+    query_all_time = """
     SELECT tokens.*, articles.publication_date
     FROM tokens
-    JOIN articles ON tokens.sentence_id = articles.article_id
-    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
+    JOIN sentences ON tokens.sentence_id = sentences.sentence_id
+    JOIN articles ON sentences.article_id = articles.article_id
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV');
     """
 
-    # Load data into DataFrame
-    df = pd.read_sql_query(query, conn)
+    # Load all-time data into DataFrame
+    df_all_time = pd.read_sql_query(query_all_time, conn)
+    df_all_time['publication_date'] = pd.to_datetime(df_all_time['publication_date'])
 
-    # Filter data
+    # Query to get data from the last 24 hours
+    query_last_24_hours = """
+    SELECT tokens.*, articles.publication_date
+    FROM tokens
+    JOIN sentences ON tokens.sentence_id = sentences.sentence_id
+    JOIN articles ON sentences.article_id = articles.article_id
+    WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
+      AND date(substr(articles.publication_date, 1, 4) || '-' || substr(articles.publication_date, 6, 2) || '-' || substr(articles.publication_date, 9, 2)) >= date('now', '-1 day');
+    """
+
+    # Load 24-hour data into DataFrame
+    df_24_hours = pd.read_sql_query(query_last_24_hours, conn)
+    df_24_hours['publication_date'] = pd.to_datetime(df_24_hours['publication_date'])
+
+    # Group the data by lemma and pos for all-time data and 24-hour data
+    lemma_counts_all_time = df_all_time.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
+    lemma_counts_24_hours = df_24_hours.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
+
+    # Generate top 15 occurrences data tables grouped by lemma for all-time data and 24-hour data
     pos_category_filter = ['NOUN', 'VERB', 'AUX', 'ADP', 'ADV']
-    # POS filtering already done in SQL, so no need to filter again
-    df_filtered = df
+    top_15_results_all_time = {}
+    top_15_results_24_hours = {}
 
-    # Use 'publication_date' from articles table for date filtering
-    if 'publication_date' in df_filtered.columns:
-        df_filtered['publication_date'] = pd.to_datetime(df_filtered['publication_date'])
-        # Separate data for the current week
-        one_week_ago = datetime.now() - timedelta(days=7)
-        query_week = """
-        SELECT tokens.*, articles.publication_date
-        FROM tokens
-        JOIN articles ON tokens.sentence_id = articles.article_id
-        WHERE tokens.pos IN ('NOUN', 'VERB', 'AUX', 'ADP', 'ADV')
-        AND articles.publication_date >= DATE('now', '-7 days')
-        """
-        df_week = pd.read_sql_query(query_week, conn)
-        df_week['publication_date'] = pd.to_datetime(df_week['publication_date'])
-    else:
-        # If 'publication_date' column is missing, create an empty DataFrame for df_week
-        df_week = pd.DataFrame(columns=df_filtered.columns)
-
-    # Group the data by lemma and pos (ignoring token_text for simpler counts)
-    lemma_counts = df_filtered.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
-    lemma_counts_week = df_week.groupby(['lemma', 'pos']).agg(count=('lemma', 'size')).reset_index()
-
-    # Generate top 15 occurrences data tables grouped by lemma
-    top_15_results = {}
     for category in pos_category_filter:
-        category_df = lemma_counts[lemma_counts['pos'] == category]
-        top_15_sorted = category_df.sort_values(by='count', ascending=False).head(15)
-        top_15_results[category] = top_15_sorted
+        # All-Time Data
+        category_df_all_time = lemma_counts_all_time[lemma_counts_all_time['pos'] == category]
+        top_15_sorted_all_time = category_df_all_time.sort_values(by='count', ascending=False).head(15)
+        top_15_results_all_time[category] = top_15_sorted_all_time
 
-    # Generate HTML for Data Tables
+        # 24-Hour Data
+        category_df_24_hours = lemma_counts_24_hours[lemma_counts_24_hours['pos'] == category]
+        top_15_sorted_24_hours = category_df_24_hours.sort_values(by='count', ascending=False).head(15)
+        top_15_results_24_hours[category] = top_15_sorted_24_hours
+
+    # Generate HTML for Data Tables (Side-by-Side for All-Time and 24-Hour Data)
     table_html = ''
-    for category, result_df in top_15_results.items():
+    for category in pos_category_filter:
         table_html += f"<h3>Top 15 occurrences for POS category '{category}':</h3>"
-        table_html += result_df.to_html(index=False, classes='data-table', border=0)
+        table_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
+        # All-Time Data Table
+        table_html += f"<div><h4>All-Time Data</h4>{top_15_results_all_time[category].to_html(index=False, classes='data-table', border=0)}</div>"
+        # 24-Hour Data Table
+        table_html += f"<div><h4>Last 24 Hours Data</h4>{top_15_results_24_hours[category].to_html(index=False, classes='data-table', border=0)}</div>"
+        table_html += "</div>"
 
     # Plotting Separate Charts for Each POS with Plotly for Interactivity
     combined_pos_filter = ['VERB', 'AUX']
@@ -122,40 +129,40 @@ try:
 
         return fig
 
-    # Create and combine charts for weekly and all-time data
+    # Create and combine charts for 24-hour data and all-time data
     combined_chart_html = ""
 
-    # Combined VERB and AUX charts
-    fig_combined_week = create_chart(
-        lemma_counts_week,
+    # Combined VERB and AUX charts for all-time and 24-hour data
+    fig_combined_24_hours = create_chart(
+        lemma_counts_24_hours,
         combined_pos_filter,
-        'Verbs and Auxiliaries (This Week)',
+        'Verbs and Auxiliaries (Last 24 Hours)',
         color_scheme='#f07178',
-        hover_suffix='This Week'
+        hover_suffix='Last 24 Hours'
     )
     fig_combined_all_time = create_chart(
-        lemma_counts,
+        lemma_counts_all_time,
         combined_pos_filter,
         'Verbs and Auxiliaries (All Time)',
         color_scheme='#82aaff',
         hover_suffix='All Time'
     )
     combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
-    combined_chart_html += f"<div>{fig_combined_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+    combined_chart_html += f"<div>{fig_combined_24_hours.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += "</div>"
 
-    # Charts for NOUN, ADP, ADV
+    # Charts for NOUN, ADP, ADV for all-time and 24-hour data
     for pos in other_pos_filter:
-        fig_week = create_chart(
-            lemma_counts_week,
+        fig_24_hours = create_chart(
+            lemma_counts_24_hours,
             [pos],
-            f'{pos.capitalize()} (This Week)',
+            f'{pos.capitalize()} (Last 24 Hours)',
             color_scheme='#ffcb6b',
-            hover_suffix='This Week'
+            hover_suffix='Last 24 Hours'
         )
         fig_all_time = create_chart(
-            lemma_counts,
+            lemma_counts_all_time,
             [pos],
             f'{pos.capitalize()} (All Time)',
             color_scheme='#c3e88d',
@@ -163,8 +170,8 @@ try:
         )
         combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
         combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
-        combined_chart_html += f"<div>{fig_week.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
         combined_chart_html += f"<div>{fig_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+        combined_chart_html += f"<div>{fig_24_hours.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
         combined_chart_html += "</div>"
 
     # Get current date and time in EU format
@@ -201,7 +208,7 @@ try:
                 margin: 20px auto;
                 border-collapse: collapse;
                 width: 100%;
-                max-width: 800px;
+                max-width: 500px;
             }}
             .data-table th, .data-table td {{
                 border: 1px solid #d4d4d4;
