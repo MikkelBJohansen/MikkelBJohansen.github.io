@@ -53,12 +53,12 @@ try:
     top_15_results_24_hours = {}
 
     for category in pos_category_filter:
-        # All-Time Data
+        # All-Time Data - Explicitly sorting by count in descending order
         category_df_all_time = lemma_counts_all_time[lemma_counts_all_time['pos'] == category]
         top_15_sorted_all_time = category_df_all_time.sort_values(by='count', ascending=False).head(15)
         top_15_results_all_time[category] = top_15_sorted_all_time
 
-        # 24-Hour Data
+        # 24-Hour Data - Explicitly sorting by count in descending order
         category_df_24_hours = lemma_counts_24_hours[lemma_counts_24_hours['pos'] == category]
         top_15_sorted_24_hours = category_df_24_hours.sort_values(by='count', ascending=False).head(15)
         top_15_results_24_hours[category] = top_15_sorted_24_hours
@@ -79,21 +79,24 @@ try:
     other_pos_filter = ['NOUN', 'ADP', 'ADV']
 
     def create_chart(df, pos_filter, title_suffix, color_scheme, hover_suffix):
-        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).size().reset_index(name='count')
-        top_lemmas = grouped_df.sort_values(by='count', ascending=False).head(10)['lemma']
-        grouped_df = grouped_df[grouped_df['lemma'].isin(top_lemmas)]
+        # Filter by the specified parts of speech and group by 'lemma' to count occurrences
+        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).agg(count=('lemma', 'size')).reset_index()
+
+        # Sort and select the top 10 most frequent lemmas - Ensure it is sorted by count in descending order
+        top_lemmas = grouped_df.sort_values(by='count', ascending=False).head(10)
 
         fig = go.Figure()  # Initialize the figure for plotting the data
 
-        for lemma in top_lemmas:
-            lemma_df = grouped_df[grouped_df['lemma'] == lemma]
+        for _, row in top_lemmas.iterrows():
+            lemma = row['lemma']
+            count = row['count']
             fig.add_trace(
                 go.Bar(
                     marker_color=color_scheme,
                     x=[lemma],
-                    y=lemma_df['count'],
+                    y=[count],
                     name=lemma,
-                    text=f'Word: {lemma}<br>POS: {pos_filter}<br>Frequency: {lemma_df["count"].values[0]}<br>Data: {hover_suffix}',
+                    text=f'Word: {lemma}<br>POS: {pos_filter}<br>Frequency: {count}<br>Data: {hover_suffix}',
                     hoverinfo='x+y+text',
                     marker=dict(line=dict(width=1, color='black'))
                 )
