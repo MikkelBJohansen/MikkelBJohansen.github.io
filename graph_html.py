@@ -7,6 +7,8 @@ import os
 import sys
 from datetime import datetime, timedelta
 
+###VERSION 1.0###
+
 # Set up logging
 log_file = '/home/pi/danish_data_project/error_log.txt'
 logging.basicConfig(filename=log_file, level=logging.ERROR,
@@ -74,39 +76,47 @@ try:
         table_html += f"<div><h4>Last 24 Hours Data</h4>{top_15_results_24_hours[category].to_html(index=False, classes='data-table', border=0)}</div>"
         table_html += "</div>"
 
-    # Plotting Separate Charts for Each POS with Plotly for Interactivity
-    combined_pos_filter = ['VERB', 'AUX']
-    other_pos_filter = ['NOUN', 'ADP', 'ADV']
+    # Create figures for each POS category using the correct data from tables
+    def create_chart_from_data(data_all_time, data_24_hours, title_suffix, color_scheme_all_time, color_scheme_24_hours):
+        fig = go.Figure()
 
-    def create_chart(df, pos_filter, title_suffix, color_scheme, hover_suffix):
-        # Filter by the specified parts of speech and group by 'lemma' to count occurrences
-        grouped_df = df[df['pos'].isin(pos_filter)].groupby(['lemma']).agg(count=('lemma', 'size')).reset_index()
-
-        # Sort and select the top 10 most frequent lemmas - Ensure it is sorted by count in descending order
-        top_lemmas = grouped_df.sort_values(by='count', ascending=False).head(10)
-
-        fig = go.Figure()  # Initialize the figure for plotting the data
-
-        for _, row in top_lemmas.iterrows():
+        # Plot All-Time Data
+        for _, row in data_all_time.iterrows():
             lemma = row['lemma']
             count = row['count']
             fig.add_trace(
                 go.Bar(
-                    marker_color=color_scheme,
+                    marker_color=color_scheme_all_time,
                     x=[lemma],
                     y=[count],
-                    name=lemma,
-                    text=f'Word: {lemma}<br>POS: {pos_filter}<br>Frequency: {count}<br>Data: {hover_suffix}',
+                    name=f'{lemma} (All Time)',
+                    text=f'Word: {lemma}<br>Frequency: {count}<br>Data: All Time',
+                    hoverinfo='x+y+text',
+                    marker=dict(line=dict(width=1, color='black'))
+                )
+            )
+
+        # Plot 24-Hour Data
+        for _, row in data_24_hours.iterrows():
+            lemma = row['lemma']
+            count = row['count']
+            fig.add_trace(
+                go.Bar(
+                    marker_color=color_scheme_24_hours,
+                    x=[lemma],
+                    y=[count],
+                    name=f'{lemma} (Last 24 Hours)',
+                    text=f'Word: {lemma}<br>Frequency: {count}<br>Data: Last 24 Hours',
                     hoverinfo='x+y+text',
                     marker=dict(line=dict(width=1, color='black'))
                 )
             )
 
         fig.update_layout(
-            title=f'Top 10 Most Frequent Words: {title_suffix}',
+            title=f'Top 15 Most Frequent Words: {title_suffix}',
             xaxis_title='Word',
             yaxis_title='Total Number of Word Occurrences',
-            barmode='stack',
+            barmode='group',
             plot_bgcolor='#2b2b2b',
             paper_bgcolor='#1e1e1e',
             font=dict(size=14, color='white'),
@@ -132,49 +142,36 @@ try:
 
         return fig
 
-    # Create and combine charts for 24-hour data and all-time data
+    # Create combined charts for VERB and AUX, and individual charts for other POS categories
     combined_chart_html = ""
 
-    # Combined VERB and AUX charts for all-time and 24-hour data
-    fig_combined_24_hours = create_chart(
-        lemma_counts_24_hours,
-        combined_pos_filter,
-        'Verbs and Auxiliaries (Last 24 Hours)',
-        color_scheme='#f07178',
-        hover_suffix='Last 24 Hours'
-    )
-    fig_combined_all_time = create_chart(
-        lemma_counts_all_time,
-        combined_pos_filter,
-        'Verbs and Auxiliaries (All Time)',
-        color_scheme='#82aaff',
-        hover_suffix='All Time'
+    # Combine VERB and AUX for charts
+    combined_all_time = pd.concat([top_15_results_all_time['VERB'], top_15_results_all_time['AUX']])
+    combined_24_hours = pd.concat([top_15_results_24_hours['VERB'], top_15_results_24_hours['AUX']])
+
+    fig_combined = create_chart_from_data(
+        combined_all_time,
+        combined_24_hours,
+        'Verbs and Auxiliaries',
+        color_scheme_all_time='#82aaff',
+        color_scheme_24_hours='#f07178'
     )
     combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
-    combined_chart_html += f"<div>{fig_combined_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
-    combined_chart_html += f"<div>{fig_combined_24_hours.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+    combined_chart_html += f"<div>{fig_combined.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
     combined_chart_html += "</div>"
 
-    # Charts for NOUN, ADP, ADV for all-time and 24-hour data
-    for pos in other_pos_filter:
-        fig_24_hours = create_chart(
-            lemma_counts_24_hours,
-            [pos],
-            f'{pos.capitalize()} (Last 24 Hours)',
-            color_scheme='#ffcb6b',
-            hover_suffix='Last 24 Hours'
-        )
-        fig_all_time = create_chart(
-            lemma_counts_all_time,
-            [pos],
-            f'{pos.capitalize()} (All Time)',
-            color_scheme='#c3e88d',
-            hover_suffix='All Time'
+    # Create charts for NOUN, ADP, ADV categories
+    for pos in ['NOUN', 'ADP', 'ADV']:
+        fig = create_chart_from_data(
+            top_15_results_all_time[pos],
+            top_15_results_24_hours[pos],
+            f'{pos.capitalize()}',
+            color_scheme_all_time='#c3e88d',
+            color_scheme_24_hours='#ffcb6b'
         )
         combined_chart_html += f"<h3>Charts for POS category '{pos.capitalize()}':</h3>"
         combined_chart_html += "<div style='display: flex; justify-content: center; gap: 50px;'>"
-        combined_chart_html += f"<div>{fig_all_time.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
-        combined_chart_html += f"<div>{fig_24_hours.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
+        combined_chart_html += f"<div>{fig.to_html(full_html=False, include_plotlyjs='cdn')}</div>"
         combined_chart_html += "</div>"
 
     # Get current date and time in EU format
