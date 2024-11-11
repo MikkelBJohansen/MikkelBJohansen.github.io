@@ -1,3 +1,4 @@
+#!/home/pi/miniforge3/envs/data-science/bin/python
 import sqlite3 as sq
 import pandas as pd
 import plotly.graph_objects as go
