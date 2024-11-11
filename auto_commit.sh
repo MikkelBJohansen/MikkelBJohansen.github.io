@@ -14,3 +14,10 @@ git commit -m "Automated update: $(date '+%Y-%m-%d %H:%M:%S')" >> /home/pi/danis
 
 # Push changes to GitHub
 git push origin main >> /home/pi/danish_data_project/git_log.txt 2>&1
+
+# Check if the push was successful and send a message
+if [ $? -eq 0 ]; then
+    echo "Push to GitHub succeeded."
+else
+    echo "Push to GitHub failed."
+fi
