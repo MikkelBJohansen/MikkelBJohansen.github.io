@@ -302,3 +302,134 @@ Already up to date.
  1 file changed, 11 insertions(+), 11 deletions(-)
 To github.com:MikkelBJohansen/MikkelBJohansen.github.io.git
    37c1fee..220232a  main -> main
+Running auto_commit.sh at Sat  9 Nov 20:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 00:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 04:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 08:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 12:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 16:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Sun 10 Nov 20:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Mon 11 Nov 00:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Mon 11 Nov 04:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Mon 11 Nov 08:15:01 GMT 2024
+From github.com:MikkelBJohansen/MikkelBJohansen.github.io
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   cron_log.txt
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Everything up-to-date
+Running auto_commit.sh at Mon 11 Nov 10:01:15 GMT 2024
