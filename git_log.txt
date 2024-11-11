@@ -470,3 +470,11 @@ remote: warning: GH001: Large files detected. You may want to try Git Large File
 To github.com:MikkelBJohansen/MikkelBJohansen.github.io.git
    39b0b7c..c18b5a8  main -> main
 Running auto_commit.sh at Mon 11 Nov 19:31:55 GMT 2024
+[main db5468a] Automated update: 2024-11-11 19:31:55
+ 2 files changed, 20 insertions(+), 11 deletions(-)
+ssh: connect to host github.com port 22: Network is unreachable
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+Running auto_commit.sh at Mon 11 Nov 20:15:01 GMT 2024
