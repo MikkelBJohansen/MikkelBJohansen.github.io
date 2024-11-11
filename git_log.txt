@@ -461,3 +461,12 @@ To github.com:MikkelBJohansen/MikkelBJohansen.github.io.git
    db1e448..39b0b7c  main -> main
 Push to GitHub succeeded.
 Running auto_commit.sh at Mon 11 Nov 19:16:26 GMT 2024
+[main c18b5a8] Automated update: 2024-11-11 19:16:28
+ 3 files changed, 301724 insertions(+), 301 deletions(-)
+ create mode 100644 Miniforge3-Linux-aarch64.sh
+remote: warning: See https://gh.io/lfs for more information.        
+remote: warning: File Miniforge3-Linux-aarch64.sh is 73.06 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB        
+remote: warning: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.        
+To github.com:MikkelBJohansen/MikkelBJohansen.github.io.git
+   39b0b7c..c18b5a8  main -> main
+Running auto_commit.sh at Mon 11 Nov 19:31:55 GMT 2024
