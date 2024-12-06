@@ -48,19 +48,53 @@
             background-color: #1e1e1e;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.19.2/dist/powerbi.min.js"></script>
 </head>
 
 <body>
     <div class="title-container">
-        <h1>two report pages test 1.2</h1>
+        <h1>Template + java 1.0</h1>
         <p>Template subtitle that you can edit later</p>
     </div>
-    <div class="report-container">
-        <iframe title="frame1" aria-label="Power BI Report - Page Side 1" loading="lazy" width="1024" height="1060" src="https://app.powerbi.com/view?r=eyJrIjoiM2U4MGQ0MGYtYzFiNy00ZTliLWE2NGEtYjU0NzA0ZjhiODllIiwidCI6IjQwMjUyM2NkLWU0OTMtNGQxNC1hMTY0LWRiZjllZmUzZmI3NyIsImMiOjl9&pageName=Side%201" allowfullscreen="true"></iframe>
-    </div>
-    <div class="report-container">
-        <iframe title="test" width="1024" height="1060" src="https://app.powerbi.com/view?r=eyJrIjoiM2U4MGQ0MGYtYzFiNy00ZTliLWE2NGEtYjU0NzA0ZjhiODllIiwidCI6IjQwMjUyM2NkLWU0OTMtNGQxNC1hMTY0LWRiZjllZmUzZmI3NyIsImMiOjl9" frameborder="0" allowFullScreen="true"></iframe>
-    </div>
+    <div class="report-container" id="reportContainer1"></div>
+    <div class="report-container" id="reportContainer2"></div>
+
+    <script>
+        var embedConfig1 = {
+            type: 'report',
+            embedUrl: 'https://app.powerbi.com/view?r=eyJrIjoiM2U4MGQ0MGYtYzFiNy00ZTliLWE2NGEtYjU0NzA0ZjhiODllIiwidCI6IjQwMjUyM2NkLWU0OTMtNGQxNC1hMTY0LWRiZjllZmUzZmI3NyIsImMiOjl9',
+            accessToken: '',
+            settings: {
+                filterPaneEnabled: false,
+                navContentPaneEnabled: false
+            }
+        };
+
+        var embedConfig2 = {
+            type: 'report',
+            embedUrl: 'https://app.powerbi.com/view?r=eyJrIjoiY2E4MTIzYmUtNmQxZC00NzEyLTk5ZTItOTlmN2VkYjJiZDlkIiwidCI6IjQwMjUyM2NkLWU0OTMtNGQxNC1hMTY0LWRiZjllZmUzZmI3NyIsImMiOjl9',
+            accessToken: '',
+            settings: {
+                filterPaneEnabled: false,
+                navContentPaneEnabled: false
+            }
+        };
+
+        var reportContainer1 = document.getElementById('reportContainer1');
+        var reportContainer2 = document.getElementById('reportContainer2');
+
+        powerbi.embed(reportContainer1, embedConfig1).then(function (report) {
+            report.setPage('Side 1').catch(function (error) {
+                console.error('Error setting page:', error);
+            });
+        });
+
+        powerbi.embed(reportContainer2, embedConfig2).then(function (report) {
+            report.setPage('Cirle').catch(function (error) {
+                console.error('Error setting page:', error);
+            });
+        });
+    </script>
 </body>
 
 </html>
